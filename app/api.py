@@ -48,22 +48,7 @@ async def inicializacao(api: FastAPI):
 APP = FastAPI(lifespan=inicializacao)
 TAREFAS = []
 
-
-# GET /tarefas/{id_tarefa}: Visualizar tarefa específica
-@APP.get("/tarefas/{id_tarefa}")
-async def tarefa_especifica(sessao: SESSAO, id_tarefa: int) -> Tarefa:
-    """Rota para visualizar uma tarefa específica"""
-    # select * from tarefas where id == id_tarefa
-    regra = select(Tarefa).where(Tarefa.id == id_tarefa)
-    resultado = sessao.exec(regra).all()
-
-    if resultado:
-        return resultado[0]
-
-    return {"mensagem": "Tarefa não existe"}
-
-
-
+x'
 # POST /tarefas: Cria tarefa
 @APP.post("/tarefas", status_code=201)
 async def post_tarefa(sessao: SESSAO, titulo: str, descricao: str = None):
