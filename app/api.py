@@ -27,9 +27,9 @@ def obter_engine():
         )
 
     return create_engine(
-        "mysql+pymysql://"
+        "postgresql+psycopg2://"
         f"{configuracao['DATABASE_USERNAME']}:{configuracao['DATABASE_PASSWORD']}"
-        f"@{configuracao['DATABASE_ADDRESS']}:3306/{configuracao['DATABASE']}"
+        f"@{configuracao['DATABASE_ADDRESS']}:5432/{configuracao['DATABASE']}"
     )
 
 
