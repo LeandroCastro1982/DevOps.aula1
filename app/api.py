@@ -1,44 +1,41 @@
 """Aplicação para o módulo de extensão DevOps"""
 
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Annotated, List
 import os
-import sys
 
 from fastapi import FastAPI, Depends
 from sqlmodel import SQLModel, Session, create_engine, select
 
 from .modelo import Tarefa
 
-DATABASE_USERNAME = os.environ.get("DATABASE_USERNAME")
-DATABASE_PASSWORD = os.environ.get("DATABASE_PASSWORD")
-DATABASE_ADDRESS = os.environ.get("DATABASE_ADDRESS")
-DATABASE = os.environ.get("DATABASE")
 
-if DATABASE_USERNAME is None:
-    print("DATABASE_USERNAME está faltando")
-    sys.exit(1)
+@lru_cache
+def obter_engine():
+    """Cria o engine quando a aplicação realmente precisar do banco."""
+    configuracao = {
+        "DATABASE_USERNAME": os.environ.get("DATABASE_USERNAME"),
+        "DATABASE_PASSWORD": os.environ.get("DATABASE_PASSWORD"),
+        "DATABASE_ADDRESS": os.environ.get("DATABASE_ADDRESS"),
+        "DATABASE": os.environ.get("DATABASE"),
+    }
+    ausentes = [nome for nome, valor in configuracao.items() if not valor]
+    if ausentes:
+        raise RuntimeError(
+            "Variáveis de ambiente do banco ausentes: " + ", ".join(ausentes)
+        )
 
-if DATABASE_PASSWORD is None:
-    print("DATABASE_PASSWORD está faltando")
-    sys.exit(1)
-
-if DATABASE_ADDRESS is None:
-    print("DATABASE_ADDRESS está faltando")
-    sys.exit(1)
-
-if DATABASE is None:
-    print("DATABASE está faltando")
-    sys.exit(1)
-
-ENGINE = create_engine(
-    f"mysql+pymysql://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_ADDRESS}:3306/{DATABASE}"
-)
+    return create_engine(
+        "mysql+pymysql://"
+        f"{configuracao['DATABASE_USERNAME']}:{configuracao['DATABASE_PASSWORD']}"
+        f"@{configuracao['DATABASE_ADDRESS']}:3306/{configuracao['DATABASE']}"
+    )
 
 
 def criar_sessao():
-    """ Função utilitária para criar sessão no banco de dados """
-    with Session(ENGINE) as s:
+    """Função utilitária para criar sessão no banco de dados"""
+    with Session(obter_engine()) as s:
         yield s
 
 
@@ -46,8 +43,8 @@ SESSAO = Annotated[Session, Depends(criar_sessao)]
 
 
 async def inicializacao(_: FastAPI):
-    """ Função para incialização da API e do banco de dados """
-    SQLModel.metadata.create_all(ENGINE)
+    """Função para incialização da API e do banco de dados"""
+    SQLModel.metadata.create_all(obter_engine())
     yield
 
 
@@ -140,7 +137,7 @@ async def apagar_tarefa(sessao: SESSAO, id_tarefa: int):
     sessao.delete(tarefa)
     sessao.commit()
 
-    return {"mensagem": "Tarefa removida"}
+    return {"mensagem": "Tarefa apagada"}
 
 
 @APP.get("/")
